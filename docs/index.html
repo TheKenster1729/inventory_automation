@@ -819,7 +819,7 @@
       // Step 2: Call API
       const response = await fetch(CONFIG.apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'content-type': 'application/json' },
         body: body,
         signal: abortController.signal,
       });
