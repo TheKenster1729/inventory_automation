@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Lab Capture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0c1017;
+    --surface: #141a24;
+    --surface-raised: #1a2231;
+    --surface-input: #111720;
+    --border: #1e2a3a;
+    --border-focus: #3b82f6;
+    --text: #e4e8ee;
+    --text-secondary: #8494a7;
+    --text-dim: #4a5568;
+    --accent: #3b82f6;
+    --accent-glow: rgba(59, 130, 246, 0.15);
+    --green: #22c55e;
+    --green-glow: rgba(34, 197, 94, 0.12);
+    --amber: #f59e0b;
+    --amber-glow: rgba(245, 158, 11, 0.12);
+    --red: #ef4444;
+    --red-glow: rgba(239, 68, 68, 0.12);
+    --radius: 10px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Header ── */
+  .header {
+    width: 100%;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .header-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green-glow);
+    animation: pulse-dot 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .header-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+
+  .header-status {
+    margin-left: auto;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  /* ── Main content ── */
+  .main {
+    width: 100%;
+    max-width: 480px;
+    padding: 24px 20px 100px;
+    flex: 1;
+  }
+
+  /* ── Sections / States ── */
+  .section {
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .section.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Capture Section ── */
+  .capture-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .capture-zone:hover, .capture-zone:focus-within {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  .capture-zone.has-image {
+    padding: 0;
+    border-style: solid;
+    border-color: var(--border);
+  }
+
+  .capture-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+    opacity: 0.8;
+  }
+
+  .capture-label {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  .capture-hint {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .capture-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    font-size: 0;
+  }
+
+  .preview-container {
+    display: none;
+    position: relative;
+  }
+
+  .preview-container img {
+    width: 100%;
+    display: block;
+    border-radius: 8px;
+  }
+
+  .preview-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 12px 16px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 0 0 8px 8px;
+  }
+
+  .preview-info {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .preview-retake {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* ── Prompt config ── */
+  .config-section {
+    margin-top: 20px;
+  }
+
+  .config-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .config-textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 12px 14px;
+    background: var(--surface-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .config-textarea:focus {
+    border-color: var(--border-focus);
+  }
+
+  .config-textarea::placeholder {
+    color: var(--text-dim);
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 14px 20px;
+    border-radius: var(--radius);
+    border: none;
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 16px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .btn-primary:hover { background: #2563eb; }
+  .btn-primary:active { transform: scale(0.985); }
+
+  .btn-primary:disabled {
+    background: var(--surface-raised);
+    color: var(--text-dim);
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .btn-success {
+    background: var(--green);
+    color: #fff;
+  }
+
+  .btn-success:hover { background: #16a34a; }
+  .btn-success:active { transform: scale(0.985); }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+
+  .btn-outline:hover {
+    border-color: var(--text-secondary);
+    color: var(--text);
+  }
+
+  /* ── Processing Section ── */
+  .processing-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 48px 24px;
+    text-align: center;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .processing-label {
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  .processing-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .processing-steps {
+    margin-top: 24px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    transition: color 0.3s;
+  }
+
+  .step.active { color: var(--text-secondary); }
+  .step.done { color: var(--green); }
+
+  .step-indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 10px;
+    transition: all 0.3s;
+  }
+
+  .step.active .step-indicator {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  .step.done .step-indicator {
+    border-color: var(--green);
+    background: var(--green-glow);
+  }
+
+  /* ── Review Section ── */
+  .review-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .review-title {
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .review-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: var(--green-glow);
+    color: var(--green);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+  }
+
+  .field-group {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+
+  .field {
+    display: flex;
+    align-items: center;
+    padding: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .field:last-child { border-bottom: none; }
+
+  .field-key {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    padding: 12px 14px;
+    min-width: 130px;
+    background: rgba(0,0,0,0.15);
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    border-right: 1px solid var(--border);
+  }
+
+  .field-value {
+    flex: 1;
+    padding: 0;
+  }
+
+  .field-value input,
+  .field-value textarea {
+    width: 100%;
+    padding: 12px 14px;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    outline: none;
+  }
+
+  .field-value input:focus,
+  .field-value textarea:focus {
+    background: var(--accent-glow);
+  }
+
+  .field-value textarea {
+    min-height: 60px;
+    resize: vertical;
+    line-height: 1.5;
+  }
+
+  .field-edited {
+    background: var(--amber-glow);
+  }
+
+  .field-edited .field-key {
+    color: var(--amber);
+  }
+
+  /* ── Error state ── */
+  .error-box {
+    background: var(--red-glow);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+  }
+
+  .error-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--red);
+    margin-bottom: 4px;
+  }
+
+  .error-message {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    word-break: break-word;
+  }
+
+  /* ── Success state ── */
+  .success-box {
+    background: var(--green-glow);
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    border-radius: var(--radius);
+    padding: 32px 24px;
+    text-align: center;
+  }
+
+  .success-icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+  }
+
+  .success-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--green);
+    margin-bottom: 4px;
+  }
+
+  .success-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  /* ── JSON raw toggle ── */
+  .raw-toggle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    padding: 8px 0;
+  }
+
+  .raw-toggle:hover { color: var(--text-secondary); }
+
+  .raw-json {
+    display: none;
+    background: var(--surface-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .raw-json.visible { display: block; }
+
+  /* ── Utilities ── */
+  .mt-12 { margin-top: 12px; }
+  .mt-20 { margin-top: 20px; }
+  .gap-row { display: flex; gap: 10px; }
+  .gap-row > * { flex: 1; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-dot"></div>
+  <div class="header-title">Lab Capture</div>
+  <div class="header-status" id="statusText">Ready</div>
+</div>
+
+<div class="main">
+
+  <!-- ═══════════ STATE 1: CAPTURE ═══════════ -->
+  <div class="section active" id="captureSection">
+
+    <div class="capture-zone" id="captureZone">
+      <div id="capturePrompt">
+        <div class="capture-icon">📷</div>
+        <div class="capture-label">Tap to capture</div>
+        <div class="capture-hint">Take a photo or select an image</div>
+      </div>
+      <div class="preview-container" id="previewContainer">
+        <img id="previewImg" alt="Preview">
+        <div class="preview-overlay">
+          <span class="preview-info" id="previewInfo"></span>
+          <button class="preview-retake" id="retakeBtn">Retake</button>
+        </div>
+      </div>
+      <input type="file" accept="image/*" capture="environment" id="fileInput">
+    </div>
+
+    <div class="config-section">
+      <label class="config-label" for="promptInput">Prompt (optional override)</label>
+      <textarea
+        class="config-textarea"
+        id="promptInput"
+        placeholder="Describe what data to extract from this image. Leave blank to use default prompt."
+      ></textarea>
+    </div>
+
+    <button class="btn btn-primary" id="analyzeBtn" disabled>
+      Analyze Image
+    </button>
+  </div>
+
+  <!-- ═══════════ STATE 2: PROCESSING ═══════════ -->
+  <div class="section" id="processingSection">
+    <div class="processing-box">
+      <div class="spinner"></div>
+      <div class="processing-label">Analyzing image…</div>
+      <div class="processing-sub">This typically takes 5–10 seconds</div>
+
+      <div class="processing-steps">
+        <div class="step active" id="step1">
+          <div class="step-indicator"></div>
+          <span>Uploading image</span>
+        </div>
+        <div class="step" id="step2">
+          <div class="step-indicator"></div>
+          <span>Running vision model</span>
+        </div>
+        <div class="step" id="step3">
+          <div class="step-indicator"></div>
+          <span>Parsing response</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-outline mt-20" id="cancelBtn">Cancel</button>
+  </div>
+
+  <!-- ═══════════ STATE 3: REVIEW ═══════════ -->
+  <div class="section" id="reviewSection">
+    <div class="review-header">
+      <div class="review-title">Review Results</div>
+      <div class="review-badge">Extracted</div>
+    </div>
+
+    <div id="fieldsContainer"></div>
+
+    <button class="raw-toggle" id="rawToggle">Show raw JSON</button>
+    <div class="raw-json" id="rawJson"></div>
+
+    <!-- Future: Submit to LabArchives -->
+    <!--
+    <button class="btn btn-success" id="submitBtn">
+      Submit to LabArchives
+    </button>
+    -->
+
+    <button class="btn btn-success" id="copyBtn">
+      Copy JSON
+    </button>
+
+    <div class="gap-row mt-12">
+      <button class="btn btn-outline" id="backBtn">← New Capture</button>
+      <button class="btn btn-outline" id="downloadBtn">Download JSON</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ STATE 4: ERROR ═══════════ -->
+  <div class="section" id="errorSection">
+    <div class="error-box">
+      <div class="error-title">Analysis failed</div>
+      <div class="error-message" id="errorMessage"></div>
+    </div>
+    <button class="btn btn-outline" id="errorBackBtn">← Try Again</button>
+  </div>
+
+  <!-- ═══════════ STATE 5: SUCCESS (future: post-submit) ═══════════ -->
+  <div class="section" id="successSection">
+    <div class="success-box">
+      <div class="success-icon">✓</div>
+      <div class="success-title">Submitted</div>
+      <div class="success-sub">Data posted to LabArchives successfully.</div>
+    </div>
+    <button class="btn btn-outline mt-20" id="successBackBtn">← New Capture</button>
+  </div>
+
+</div>
+
+<script>
+  // ════════════════════════════════════════════
+  //  CONFIGURATION — Update these values
+  // ════════════════════════════════════════════
+
+  const CONFIG = {
+    // Your API Gateway endpoint URL (replace with your actual URL)
+    apiUrl: 'https://YOUR_API_GATEWAY_ID.execute-api.us-east-1.amazonaws.com/analyze',
+
+    // Default prompt sent to the vision model if user leaves prompt blank
+    defaultPrompt: `Analyze this lab image. Extract all relevant data and return it as a JSON object. Include fields such as: sample_id, date, measurements, observations, and any text visible in the image.`,
+
+    // Maximum image dimension (pixels) before client-side resize
+    maxImageDimension: 1600,
+
+    // JPEG compression quality (0–1) for the resized image
+    imageQuality: 0.85,
+  };
+
+
+  // ════════════════════════════════════════════
+  //  STATE MANAGEMENT
+  // ════════════════════════════════════════════
+
+  let currentImage = null;   // base64 string (after resize)
+  let currentResult = null;  // parsed JSON from API
+  let editedResult = null;   // user-edited version
+  let abortController = null;
+
+  const $ = (sel) => document.querySelector(sel);
+
+
+  // ════════════════════════════════════════════
+  //  NAVIGATION
+  // ════════════════════════════════════════════
+
+  function showSection(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    $(`#${id}`).classList.add('active');
+
+    const statusMap = {
+      captureSection: 'Ready',
+      processingSection: 'Processing…',
+      reviewSection: 'Review',
+      errorSection: 'Error',
+      successSection: 'Done',
+    };
+    $('#statusText').textContent = statusMap[id] || '';
+  }
+
+
+  // ════════════════════════════════════════════
+  //  IMAGE CAPTURE & RESIZE
+  // ════════════════════════════════════════════
+
+  $('#fileInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    resizeAndPreview(file);
+  });
+
+  $('#retakeBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resetCapture();
+    // Small delay so the click doesn't re-trigger the file input
+    setTimeout(() => $('#fileInput').click(), 50);
+  });
+
+  function resizeAndPreview(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        // Resize via canvas
+        const max = CONFIG.maxImageDimension;
+        let { width, height } = img;
+
+        if (width > max || height > max) {
+          const ratio = Math.min(max / width, max / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Get base64 (strip the data:image/jpeg;base64, prefix for API)
+        const dataUrl = canvas.toDataURL('image/jpeg', CONFIG.imageQuality);
+        currentImage = dataUrl.split(',')[1]; // pure base64
+
+        // Show preview
+        $('#previewImg').src = dataUrl;
+        $('#previewContainer').style.display = 'block';
+        $('#capturePrompt').style.display = 'none';
+        $('#captureZone').classList.add('has-image');
+
+        const sizeKB = Math.round((currentImage.length * 3) / 4 / 1024);
+        $('#previewInfo').textContent = `${width}×${height} · ${sizeKB} KB`;
+
+        $('#analyzeBtn').disabled = false;
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function resetCapture() {
+    currentImage = null;
+    currentResult = null;
+    editedResult = null;
+    $('#fileInput').value = '';
+    $('#previewContainer').style.display = 'none';
+    $('#capturePrompt').style.display = 'block';
+    $('#captureZone').classList.remove('has-image');
+    $('#analyzeBtn').disabled = true;
+    $('#rawJson').classList.remove('visible');
+    $('#rawToggle').textContent = 'Show raw JSON';
+  }
+
+
+  // ════════════════════════════════════════════
+  //  API CALL
+  // ════════════════════════════════════════════
+
+  $('#analyzeBtn').addEventListener('click', analyze);
+  $('#cancelBtn').addEventListener('click', cancelAnalysis);
+
+  async function analyze() {
+    showSection('processingSection');
+    resetSteps();
+
+    const prompt = $('#promptInput').value.trim() || CONFIG.defaultPrompt;
+
+    abortController = new AbortController();
+
+    try {
+      // Step 1: Upload
+      setStep(1, 'active');
+
+      const body = JSON.stringify({
+        image: currentImage,
+        prompt: prompt,
+      });
+
+      setStep(1, 'done');
+      setStep(2, 'active');
+
+      // Step 2: Call API
+      const response = await fetch(CONFIG.apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: body,
+        signal: abortController.signal,
+      });
+
+      setStep(2, 'done');
+      setStep(3, 'active');
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      // Step 3: Parse
+      const data = await response.json();
+      setStep(3, 'done');
+
+      currentResult = data;
+      editedResult = JSON.parse(JSON.stringify(data)); // deep clone
+      renderReviewFields(data);
+      showSection('reviewSection');
+
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        showSection('captureSection');
+        return;
+      }
+      $('#errorMessage').textContent = err.message;
+      showSection('errorSection');
+    }
+  }
+
+  function cancelAnalysis() {
+    if (abortController) abortController.abort();
+  }
+
+  function resetSteps() {
+    [1, 2, 3].forEach(n => {
+      const el = $(`#step${n}`);
+      el.className = 'step';
+    });
+  }
+
+  function setStep(n, state) {
+    const el = $(`#step${n}`);
+    el.className = `step ${state}`;
+    if (state === 'done') {
+      el.querySelector('.step-indicator').textContent = '✓';
+    }
+  }
+
+
+  // ════════════════════════════════════════════
+  //  REVIEW FIELDS
+  // ════════════════════════════════════════════
+
+  function renderReviewFields(data, prefix = '') {
+    const container = $('#fieldsContainer');
+    container.innerHTML = '';
+    renderFieldGroup(data, container, prefix);
+    $('#rawJson').textContent = JSON.stringify(data, null, 2);
+  }
+
+  function renderFieldGroup(obj, container, prefix) {
+    const group = document.createElement('div');
+    group.className = 'field-group';
+
+    for (const [key, value] of Object.entries(obj)) {
+      const path = prefix ? `${prefix}.${key}` : key;
+
+      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        // Nested object → label + recurse
+        const label = document.createElement('div');
+        label.style.cssText = `
+          font-family: 'IBM Plex Mono', monospace;
+          font-size: 11px;
+          font-weight: 500;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+          color: var(--text-dim);
+          padding: 16px 0 6px;
+        `;
+        label.textContent = key;
+        container.appendChild(label);
+        renderFieldGroup(value, container, path);
+        continue;
+      }
+
+      const field = document.createElement('div');
+      field.className = 'field';
+      field.id = `field-${path}`;
+
+      const keyEl = document.createElement('div');
+      keyEl.className = 'field-key';
+      keyEl.textContent = key;
+
+      const valWrap = document.createElement('div');
+      valWrap.className = 'field-value';
+
+      const displayValue = Array.isArray(value) ? value.join(', ') : String(value ?? '');
+
+      // Use textarea for long values, input for short
+      const isLong = displayValue.length > 60;
+      const input = document.createElement(isLong ? 'textarea' : 'input');
+
+      if (!isLong) {
+        input.type = 'text';
+        input.value = displayValue;
+      } else {
+        input.textContent = displayValue;
+        input.value = displayValue;
+      }
+
+      input.dataset.path = path;
+      input.dataset.original = displayValue;
+
+      input.addEventListener('input', (e) => {
+        const edited = e.target.value !== e.target.dataset.original;
+        field.className = edited ? 'field field-edited' : 'field';
+        setNestedValue(editedResult, path, e.target.value);
+        $('#rawJson').textContent = JSON.stringify(editedResult, null, 2);
+      });
+
+      valWrap.appendChild(input);
+      field.appendChild(keyEl);
+      field.appendChild(valWrap);
+      group.appendChild(field);
+    }
+
+    container.appendChild(group);
+  }
+
+  function setNestedValue(obj, path, value) {
+    const keys = path.split('.');
+    let current = obj;
+    for (let i = 0; i < keys.length - 1; i++) {
+      current = current[keys[i]];
+    }
+    current[keys[keys.length - 1]] = value;
+  }
+
+
+  // ════════════════════════════════════════════
+  //  REVIEW ACTIONS
+  // ════════════════════════════════════════════
+
+  // Raw JSON toggle
+  $('#rawToggle').addEventListener('click', () => {
+    const el = $('#rawJson');
+    el.classList.toggle('visible');
+    $('#rawToggle').textContent = el.classList.contains('visible')
+      ? 'Hide raw JSON'
+      : 'Show raw JSON';
+  });
+
+  // Copy JSON
+  $('#copyBtn').addEventListener('click', async () => {
+    const json = JSON.stringify(editedResult, null, 2);
+    try {
+      await navigator.clipboard.writeText(json);
+      const btn = $('#copyBtn');
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = 'Copy JSON'; }, 1500);
+    } catch {
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = json;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+  });
+
+  // Download JSON
+  $('#downloadBtn').addEventListener('click', () => {
+    const json = JSON.stringify(editedResult, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lab-capture-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Back / New Capture
+  $('#backBtn').addEventListener('click', () => {
+    resetCapture();
+    showSection('captureSection');
+  });
+
+  $('#errorBackBtn').addEventListener('click', () => {
+    showSection('captureSection');
+  });
+
+  $('#successBackBtn').addEventListener('click', () => {
+    resetCapture();
+    showSection('captureSection');
+  });
+</script>
+
+</body>
+</html>
